@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Pedidos</title>
+    <style>
+        /* Tema Moderno e Profissional */
+        :root {
+            --primary-color: #ff9100;
+            --secondary-color: #000000;
+            --background-color: #a6ccc3;
+            --text-color: #000000;
+            --accent-color: #FFC107;
+            --border-radius: 15px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-background: #F0F0F0;
+            --input-border-color: #CCC;
+            --input-text-color: #000;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 2.8em;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+
+        /* Estilo moderno para a tabela */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 7px 12px;
+            background-color: var(--background-color);
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        td {
+            color: var(--secondary-color);
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 10px;
+            background-color: var(--input-background);
+            border: 1px solid var(--input-border-color);
+            border-radius: var(--border-radius);
+            font-size: 1em;
+            color: var(--input-text-color);
+            box-shadow: var(--box-shadow);
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: #FFF;
+        }
+
+        /* Estilo para os campos */
+        .stock, .output-quantity {
+            background-color: #E6E6E6;
+            color: #333;
+            border-color: #BFBFBF;
+        }
+
+        #orderTotal, #totalGeladinhos {
+            font-weight: bold;
+            font-size: 1.8em;
+            margin-top: 30px;
+            color: var(--primary-color);
+            text-align: right;
+            background-color: rgba(255, 255, 255, 0);
+        }
+
+        /* Imagens */
+        .product-image {
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border-radius: var(--border-radius);
+            object-fit: cover;
+            margin-right: 10px;
+        }
+
+        .product-image.enlarged {
+            width: 300px;
+            height: 300px;
+            transform: scale(1.5);
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            z-index: 100;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--primary-color);
+        }
+
+        /* Efeito de hover */
+        tr:hover td {
+            background-color: #f1f1f1;
+            transition: background-color 0.2s ease;
+        }
+
+        /* Design responsivo */
+        @media screen and (max-width: 768px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            tr {
+                margin-bottom: 15px;
+                background-color: white;
+                box-shadow: var(--box-shadow);
+            }
+
+            td {
+                border: none;
+                position: relative;
+                padding-left: 50%;
+                padding-top: 12px;
+                padding-bottom: 12px;
+            }
+
+            td:before {
+                position: absolute;
+                top: 12px;
+                left: 12px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                content: attr(data-label);
+                font-weight: bold;
+                text-transform: uppercase;
+                color: var(--secondary-color);
+            }
+        }
+
+        .product-name-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .lock-icon {
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 1.2em;
+            color: var(--primary-color);
+        }
+
+        .locked {
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestão de Pedidos</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Preço</th>
+                <th>Estoque</th>
+                <th>Quantidade de geladinhos</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody id="productTableBody">
+            <!-- As linhas dos produtos serão adicionadas dinamicamente aqui -->
+        </tbody>
+    </table>
+    <div id="orderTotal">Valor Total do Pedido: R$ 0</div>
+    <div id="totalGeladinhos">Total de geladinhos: 0</div>
+
+    <script>
+        const products = [
+            { name: "Morango trufado", image: "https://lh3.googleusercontent.com/fife/ALs6j_FVm_InMFdSnV9bsGN-jmUarQqMoCjtgDd9cBSHYjgEcmm-PVfhdNuOsDHW_OVLgw-BEedqg2A4ndwR4q9FpW36EH0JLcye8LkoMwveau6L9OhcrxoOc5OoRJ5uvnAqniQq4ZzIprf-s7d-PE4MlKFMZacfhUoGFqLYG9Kui_xIv4SPWw18G7k4fxs4O4HBqM0EcYBv1fFMcRmpgVGCtSp38C-F0oqlJqn-FD9R_Xa5ZANc8L3Rh9i-BhZ-XC76D1-8j9g2KlIS-Na6l7EBJHd6pYCb-SxRDrF7OZrN1o5IT1qV8Fzu_BH9lafrADqFtZyABts3pSRPjKWgJq8JLIEFBcQEG03zB3a1Kr_TDid2ltdDU8Uu5rn7Vo3Hu6PzxaRTs-4YFYr-nUekgkfzadjwBIwRFwkmyStROxYHNaUgDwavMJxusHdkBPeSyMMLs625zmUu1e3qU7tfnSkpa-FEaiyaoXahIjMS2wfSCiXuAw8weD_1RMKzsv8FRL7BePHHWVY3ElZd2yMdzJ89ynkNtA65svwgBBJxVqyqwBEXN1knC9zwvdC3UbOh57LP16Lqa2rR8aRssvG1IYFstnyOeu2Qexvq4ix18yw8kRgPIoF4LvVioOQ5eQuj7w7WQ1_y2rq_dBjToXmIQqMsy3gF_UOuQ7NVAOXWiRSG1krTuFZE2RM7bcA28SvB5hPOUJpYU9AjYwGTOzoj5JRDksoi0LBdJoUBhpyZzxPs30iEi8kIYOyrZb-fIdmdTiZOL-JKvJMtuxDMRQD7NlFqRKz6QyX9gAu7JpfHtuxCdSau1zFwLJALT2KHRILIucVpHFUerAH6OlZg1XrPsW9x31aS9CrfV0cVgBZm5ulru2etDdJQTmQUeQRQlNQaa1pSgv6q4R9NB-hMlL9exDbVfTg-EK85Mf8VdW-3et03YBnsGQ1SlwruQyzBsDyEs-JfSHYoswZ6WYUxQ1pa8kHcV6C-tnbU8GFudZtsOc0szD59rv1WGhBWJ75KMf6OuDjYbI6HEBIAX73_Z0kiEa2TaDTMvKDrWOeTjmd2CIFAIKhEb129T1GPHUhMipKq23JoffsnsgPi_ziBgsAzCHzWKy6eM-E-a48AFNKkpWSCNkpkUik1Pl9Iqqlg_-B1dnXvGirmWGDk1c_wh7gFpS-DmoTOUXP0uNGWuprzmCMdRDiDJKzrYjSEnWXRNqlHBNRcZFwRuONSqR8_sgTSH-p3H67FrI-YfnlIMDs09LFt3Q1M5KWPfXTRxiK8ape_8et8SPGOFKckGyMva1fQkOQYiVNx1LuCteN3VKv9hFLr14dMdzozJGDf_KYGle5dfy6OPIUxFMYimZYirtfsmDDv2cc7SH7_ri6LsywxubsOuHnXaStdxQ9gqEvAtrGfZLdb6mTjAFP8A7dZWPVwUfMok_evsOEjc8THlCGHfFOowwg65cizCWwQBdNxqOZ1W6ewxYMsVoeQZU2n8VuXOvHSaNP0OlCAxfhb_zNw9vY0AY6LSAKcqXxHdHdPEWutm95u5Xlk6nZAuY9TXgr497Zl3FDTpd490Tjtm5jGtIxo6VioOuMYoY0F_ao-3jeVk3XQt0wnGX-R1G7u5ie6Nuri5Q=w1366-h617" },
+            { name: "Ninho com Nutella", image: "https://lh3.googleusercontent.com/fife/ALs6j_GlQf1Jfm7A4F6oH-io_Sw7JFGTRddquBO0fgkxZ9BgLRUnFjLc-Cmi_W47FMCiNfEXh_qZExn1M6TMJB_c3zBiZQSYTNboTaQnXu98JfHYwNtCLnFOwAPKDL0wKQiJj1z-jcBNfMtZAZ9t49NwdAL74XyuB5hJXj48MNjAAB3XRrlFN5njHj6CLiJtnmg8J-XTj-fn0h7f-OqLLu7pBxFFOfYEnQo2GH5H_LgbhA48ZMSKAA8HivVfSuavkpuTviGnRf64SEWHIdq_AzCsBP_-xLDcDraZu-q8WwAfO1_IWVlnxWtqV3Hbl5K54qNEwKpy9yKMWWyUz-xIs2o8bJ7u1lQR3dyX5jRIQfwZ9irkNSKel3-UajC-8VrgCHbeoISwqpEz3LtbP4nj-hjekV8nXTaiXa6atBWvHYrpOUZMqNG0aJy-NWkdDpHZDhIFu3nWAMrV5vzuDmXrbv-dD5Dy2YCSVUFWyXIfTBTaONL5eCDvv7r9WckcTJL1n-YRTbqUs_DoQCmgVw9FVGvmRegFF3RO3Ys1ArwCmqpYhJD1yCAGCBF0qQOyn4qhJBCYRhyLcfDfL571tsDCgfpSZq6KIfi0ExcpEFr_9-isgIl-S9LmMXuX7umU4vstkLwg_XWDUXqauUxYgtXU83AublqxESeASsfw83wj6oWh8kgq0N3WAuYD3zT2VGgurT6ABofAz--IXlZYVCsltJr272ds8bx4GnKRwFhdgWecOYvwkx8XTuKvAonBWiUb64fqdpG65J6giYJ3IJWABpBqTMewrQwlFNzgTjyGjNha5Znsix9TjQY9TyYT8l9wRNkFMT5WsWXLlmV6czlaccuPDRZBX51E7kRsnTPZfGE3w8Q3umpiUp7zufnIDQSCrIoTE5706aLojvdXzb4usXPRZPuF7rMVkKDYhe_U78bqnAohjp8HdYwh-5kdxoxCLMLg3VmV5EhXZwPMuSON-B3-xk4CQXeQcYybzYBRnAtRQHzjA3hZ4FujP9ZAX4-bQlSy_cZ8XUQ06GMnUzzFHl0oO2LZnhG6oLUbmGUOfdCgntuFYz6i4PXPI5oJLOXj7H6q3C2Q3nc6NAh3TwjNZrTn91-t2rZY-1upIdWaKhyWVpd5QMyr7FMYQ0nBdcBHu8KMeEbzcJlxClnycgSyJX4VY7I9fzvkuNpiRlJFClMuSDwJgufTaiFdkWcH2vmQNF1nazU6f88hCxSP6Sk_KpHPWl4bO0O1XTEyVmGyRAr_PO3nUSuHJizFlzaACZy5k0j7lE8J9bF1ub_q_T1ATGejz4anzDpxpNf6jjhsSKUSOMOVs467hEfWAjU5sQDmvtEQ72w0GeJf61TF4e-DadE7yABtmYvT6gGQ9muqOcAsnHL7Zzzr9yAHk79IcYJvPuf574g6JtyXHpiS8d8EhTS9hhUduIrBXIfc0L-RVkJlEgrhJd3kn8XlCcYhEyUZmWtpauG-VrF-weEDi7I0D0MtMVd8p6hQrJbVNuO2sgQ2dY50VVJ4hEvjj_fZk4NGudZxVg98JbaqJ5cgv1JCNtYLo27SMaqL1fMZAsTDnoixRfSkwcV10wdld77LQiFPysVVsR4sAeYCmugvj5XzQyCyqA=w1366-h617" },
+            { name: "Maracujá com Nutella", image: "https://lh3.googleusercontent.com/fife/ALs6j_Ev_szhF-u0tyiZxngQdQCNhERk3MzaRuxd2-Lwdbhoy-HlcGeeJ5nua-cg87nBpi-T9syo1g3tc_Qxf86v6125Z9QOivgIgGVOdaXhbtxSUZuyuHfBnbLyu8Nspnx1l1hFQIE6lHOl6mhURfEcQU6EHg7Ey9FPGYv0EGsaFwHOJtU0ux6_H_aOJVJlE3Y4trLCKfLiQDzPbViTl13oj2u5u5oa_xpJcOGpPo9w2lHZAfauZni5PLAqUUQvw8clZwaR-T9cJBsda1KnLOaywSGYEceMxExI06Ic1q46H3dbETRQYk2qIhDoZmjPsA1NqqNFW_yF7QoEPpda3OHZIO2U9KChS0EB4PWngfgWhpQY43g_hlUaKgLLqThKdXIl5fRK5hi4edgofxXqd5ufiLVYjQQYzoWdskD4AqK1UBp0qBQiAxtImf3vCcYTAgzsZEMCbYF7QA-eUu47QwXhStm9AI3bOdZIeW-9UNjKqttLE6vu2Ief8TkpEymtnEQY6h8D15IhaLlakAJ3gRkV5AlBzn18P8KFXtHcUzh1Jn0zwevHRdTZtKXyAXbj7h4XetGOfduIyIbbfkboxcngBkgiLvVnVBmfu8IB_31mdIygyopT6X7XaT45M5RywsJrXd1jOVczVgRYaW4dibRb7J8RvCpQeD-qnWh3gG46yv7V4dzED9VqmGyBcZC3SorGGHcOM-REsyVZ1V8Q9S9EVZkI_sqJieiD4yowhBnphZskQd6HIPQ2oT42KqT7ernAdukiU4_G91ZH-ZWQL40t4jpa36M4kEToItGluZGvkXJ4LN8BX_vq3YSaFSBXSg1QpTmZE3V5TuX-_t8HNglym8ozOHBhhZZAo5vovkDxcUyx0mtF9-8PxZvWIIwhlpv5KhmUqRL5ZdPymfXePjXOCCZHq61wjBNYgjNo65030_cD8xgSFb2rhZ59SHbOjEtTgF7og0OYsKfY3Haz_q9a71COIvNBFX7o7A08S2ksuqZQQl6WY0dlmqhNM_0BHOI_jjmtlWBHyWj0Xl1mtI7MV233MSiFQpx0iq75ZmOafUGPHgZbPwYtxMQzZaoUt9fTgZD0aU-0ELS3bDs20U5qHgzIbtWyrwRcpBSrXBjMLUFO25HtTawRwLFNNaUWoNwoStEca-J8YtD2SJ3_PeR3XapbNyAiOjN2Xf-D9rpeC7-aBNbBYqzS0L9inkB7Qeo-nInTcwGLJGfva7D7-7OG-PgInClvKsf1WMXFbxy1bE-sOsCGf5IXzv9XWxY1yrU5xEb7V4NZoqW5MOO4OKqpu1YASB9YDYlwibTr64hcjAoroXFL2TM1jlj1iBHzFFNSDrxmk9r0pSUe384JEEbVqTeA2TR-h2AcdMX7cHy3v23z6gcAAzG4s7u-hbaymPoBBCdv2XLUJuL9BOUwywmO2YZkvpAJNohcLhlTGJgpzzjPHTi517fRm6I20kzh1K0pMwzw1CEWMk0fP8EPgHxnqep4SHkbekhPI1ZMkq-z4GQsG4gxqJH9ocpBlFoN29sllMWxiofPY87gAE5cC3qGGaj9ZyOtoN8RofO7ZBpp_tOliwKCf_E0sRUOHAcKGANoikHiDZTZUN8HmbNSnBw7Zw=w1366-h617" },
+            { name: "Torta de limão", image: "https://lh3.googleusercontent.com/fife/ALs6j_FsobwcYZHixQXk5pCtEXzHuVOtY_gsNf4qVe6Nwy1BI-jIz9ZVfiynz2ttShspFsTAFICCcCfpF-xIYiqyDyZXhk_6vvfp0TyYJ4Lj40x5FG-90glupbMoR89BeInuyrsJcSwDgoU9BGzFoCrro13VbxThGDBr2kULakd3sIAyURJ1kCE3yD3NK-IXlLwx9yB8OYbQM2TDFtMfyBE-g2IOzGdwUSVJgctXt8wvy9suxssumKeh0yBopUP7vAMEqAMpyFZlTD15UVKH90yvAaj-kIwq3msTFm948Nw4AInaDkRMxH7tehCZmIhDX4FZFW1rV4SWEHwzqhyLnXJPn07lh-uWRkIgOOFqN0FSWQln2IBl8oyA2hF5JRdijWZJwQSH2PkhBWC9-GKI3YMAw1OQLWUPuojPo4Rmi-dMlVyzyzgTmw_uPtu7AiGO75iuwjukMBD0yTLPtq4weg38On2qjISgmVZ4H2s7cAFsfN-SLhX6tBqQaeANB8jqIu1bTyHgPkyUZMAkZwzRgThDD_-DsITJYwYfHh1p8BhAj0kMx1KFK4N27mvsBYwR1844EpneghCSqjJ6BTr62M26pbhvXZVYYnUGs_sVwx81J5nLdSxC1qcgPSV5QpuQ5pw4oK1Qg2nX9qktrKP9u0xn4JDHvRVzZNIz3qrzle15VoCPqkGSx0UhQwXc4wv3PfyqSgSZsv11g7xMl3pEDizCa7d7CZOXesKu_nV6BFSgqmcHwHz0bvG32DpmANH_J59GQ4TJiYovDxiTw85TrK6foc__f_v5G3HxF3HT7buV3RtJDWC6YwcR2BvBfKyVyDoSHySPmqmm2Miayl2pNMJPbjl8nSFmRxskYJrJeE5nGtBC1e-PKuAbSr2pEcqxVXa0xoU_QOmVyzzNJer6M_hZo_MKkp80Q96Wcj3rzl4OpPLJ0qtU8aLdiQXTPtVveo6hTGM8T7SKYHlNU89QuZug2E-CLUGqOPaekviYNlWC13SS4ia3MLmdEaOZHMbe8GNiGaYnwTDHrBBHYWY0JzyDVuCrUm2wSgd5qRSxXdBCFZOnytWSJfvk47Zlnk6QBpb4VgUnhslz9KpXnSFSBzeoghZ8hDYTRO3RQMyF5b016G6QeQrmQZE6nFmLXJxvkLdDcF3NTumkk3-pKUzlXu8UpYX2W0AR7UfqkpvIUuedWYPIMIyn6r4ePyZg-kfBflrJ_KTH_RND0LOl4P5khu61sxS2YtjPidRZV-A49i1-oHRe3JqpN24YDSNSd97qWs7KxMkj0dW41q6DNmFMEyJMVA4YFko5gYMU9aekrET8065YRw8lB7aCZ_pt3k_w87gkdNWDdOAYF-dYsT88-E6w8FE5262MD6YdOxYmPgxw6C5MQxdKQGIhyfX-9dtMrRg8tSVLB_0h008xp0BTrSHrOYTDwGXS_nE-owENahlT-g6Jda5UWfl-geNRNK9h4iHaYKPDPGQzrKjK3H_ce9Qb0Soj2Bs1xN55la6lxiOzlqPB2LYh2UQP-9B0KgABzdZ64oxCjhOOHIuWeCO46CmJVFOXVqKNOFCW4GgFSq_u2kGIv4VsmzRWK-QhTFwbfNUf_GdpvH5YsLEx0tBN_Ds3ag=w1366-h617" },
+            { name: "Chocolate Trufado", image: "https://lh3.googleusercontent.com/fife/ALs6j_HuvYRlFHNvFSPwMpDqZPvfeJP74KbrBf85v0pKm_gVKoRBLkzz1ALRCokgusQK-24QKyJ6HdlRT-tsEkKA0wRu9TXQPLI-S5WvtUUYTTfuo67FB83w4esKHulSaqRmD2dJQD-74yrZ90xe0IxYtK0l8t7Hlu8oBmvznTbL0CDHwoVUmFX4dumxpiktbJd4PfZVZvP6asfWmjQoPGF9o-_x34oF9L5vGda-81BVFjMHuERASuHPs-fi0l__74DJEtTlHWny75Jqu1anNqx79ymb0eZixSBzRRx3AJhwpNFfZqF5NcVKhtIJPijg1PtBLo62UF6Eek9k2WNiG4IbWXugDr4dpqj8xlPyGd0oaOLCtPLJWWJhgwSmIJaYd8C_HUkpPMFCoYsndcwMMvfNKF_f3zvWbYQop81RNRtXrbM0C9_O2cxmsohPKgHd0WwdGUwgGIbQ3SU4q874iSdORXOxS8v8kYE76K8qkoQDwDBIhXBQhNgVEMTpKBYs5yZXZOWycd9aWRQV6qM_MfRCjUzvpHl65IQ6IaXd9EDhzec8eb--hEaOkysB3qOTqhNPtjQywC33rwtF-CxVo4ggKrTZSU244P7zqjbXsSyHmgMz4iDJEAvdsAsgUEAzMPZ95y3_YF-JJF1wgd-oqkxwhD0Cy9U9fJ55PtIW9oJBt0wYVMQsDuWzIWI4sHAi5bUpGdBD7_7l3R147p3VgpZ5ffnh3l71MjxBgy5fMiL8XDfG3aDknrGUvBzpMPF5Zuwr-ReymA739IGql-VTrSOXV5wl8IrOrATSrxlsqkXRoUoI-TPAjD79idj5YK69nh-8Tq2xm9Nd85VBbvHOVEy6ZkUFUEFHnGThVHJBMruaQgAXA595Qdoyi1R-DQV0sFklOeKvyQvzAaqklRQrYmegZHVNRo_JFYJrGsC_ush63JdXDOsh1QpmBdpDHPaZ9MqGOQVUcE_B83kS63JGby0mhJaX3XnL_1MhC9u92BgpHeGqOE4my5J18DBiT64oPlp4Cum_y80HW-lmOsdclHjZly1xk3bAdqGzYokSw8tHNfKWPK20YMUDT9pW72Tjol5DV4TA9aCJfnZZmQwIgaCpvtesLUDS_kWKWFei6-t0254tn9jGQa4UMY4T8h6MCCOf2NDIQR7BW0h7DEEPZEJTByqdRyfPA7ATNDS-_p9uXrj12bmjLocUc5uYtAAqZFNOrHIujgUPK9327V0kgYZkfR9wX7vcZ-MSKiOwsjATLPCki5ppxvimALnIuolicrbzKbMuLRKBMYXnGLTl4QfVQ65PYOSAZEYar2m-fX8s1ggq3ARCd8RzckXtmrX6j8ORKjuvknxCF2lqJOWQyv0SAkJGCWutsJyUYJqoRqWsEByCF3lUBdjUJUwZ1W3LSuzPP1efY8wQ9gGqxFMxT-mb9hg3m_Rysc2oCqBUn9yfBpopXn2953jPV8oPmOf7r4_nvRMOh1m2B8dL2AyOeAQ3J3jwqIjgE1QOPwOovGJoUVoevnSkBzD-ILCIm7l2doWlfcwTnmSGobUdVM3Pj7-5RfcqIlY0-81qygqzwj7jWWXESRP8Dud8kcIoXOOjjrkKB2Xx1_gfThNuVne--A0=w1366-h617" },
+            { name: "Produto 6", image: "produto6.jpg" },
+            { name: "Produto 7", image: "produto7.jpg" },
+            { name: "Produto 8", image: "produto8.jpg" },
+            { name: "Produto 9", image: "produto9.jpg" },
+            { name: "Produto 10", image: "Produto10.jpg" }
+        ];
+
+        const tableBody = document.getElementById('productTableBody');
+        const orderTotalElement = document.getElementById('orderTotal');
+        const totalGeladinhosElement = document.getElementById('totalGeladinhos');
+
+        // Função para formatar o valor monetário
+        function formatCurrency(value) {
+            return `R$ ${value.toFixed(2).replace('.', ',')}`;
+        }
+
+        // Salva os dados no LocalStorage
+        function saveToLocalStorage(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        // Carrega os dados do LocalStorage
+        function loadFromLocalStorage(key, defaultValue) {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultValue;
+        }
+
+        // Função para carregar e preencher os dados da tabela
+        function loadTable() {
+            products.forEach((product, index) => {
+                const storedPrice = loadFromLocalStorage(`price-${index}`, 7);
+                const storedStock = loadFromLocalStorage(`stock-${index}`, 10);
+                const row = `
+                    <tr>
+                        <td data-label="Produto">
+                            <div class="product-name-container">
+                                <img src="${product.image}" class="product-image" data-index="${index}" alt="${product.name}">
+                                ${product.name}
+                            </div>
+                        </td>
+                        <td data-label="Preço">
+                            <input type="number" min="0" value="${storedPrice}" class="price" data-index="${index}">
+                            <span class="lock-icon" data-index="${index}">&#128275;</span>
+                        </td>
+                        <td data-label="Estoque"><input type="number" min="0" value="${storedStock}" class="stock" data-index="${index}"></td>
+                        <td data-label="Quantidade de geladinhos"><input type="number" min="0" value="0" class="output-quantity" data-index="${index}" data-previous="0"></td>
+                        <td data-label="Total" class="total" data-index="${index}">${formatCurrency(0)}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Função para atualizar o valor total do pedido
+        function updateOrderTotal() {
+            const totals = document.querySelectorAll('.total');
+            let orderTotal = 0;
+            totals.forEach(total => {
+                const totalValue = parseFloat(total.textContent.replace('R$ ', '').replace(',', '.')) || 0;
+                orderTotal += totalValue;
+            });
+            orderTotalElement.textContent = `Valor Total do Pedido: ${formatCurrency(orderTotal)}`;
+        }
+
+        // Função para atualizar o total de geladinhos
+        function updateTotalGeladinhos() {
+            const quantities = document.querySelectorAll('.output-quantity');
+            let totalGeladinhos = 0;
+            quantities.forEach(quantity => {
+                totalGeladinhos += parseInt(quantity.value) || 0;
+            });
+            totalGeladinhosElement.textContent = `Total de geladinhos: ${totalGeladinhos}`;
+        }
+
+        // Função para alternar o bloqueio do preço
+        function toggleLock(index) {
+            const priceInput = document.querySelector(`.price[data-index="${index}"]`);
+            const lockIcon = document.querySelector(`.lock-icon[data-index="${index}"]`);
+            const isLocked = priceInput.disabled;
+
+            priceInput.disabled = !isLocked;
+            if (isLocked) {
+                lockIcon.innerHTML = "&#128275;"; // Cadeado aberto
+            } else {
+                lockIcon.innerHTML = "&#128274;"; // Cadeado fechado
+            }
+        }
+
+        // Carrega a tabela inicialmente
+        loadTable();
+
+        // Adiciona os eventos de input para preço e estoque
+        document.querySelectorAll('.price').forEach(input => {
+            input.addEventListener('input', function () {
+                const index = this.getAttribute('data-index');
+                const price = parseFloat(this.value) || 0;
+                saveToLocalStorage(`price-${index}`, price);
+
+                // Recalcular o total
+                const quantityInput = document.querySelector(`.output-quantity[data-index="${index}"]`);
+                const total = price * parseInt(quantityInput.value);
+                document.querySelector(`.total[data-index="${index}"]`).textContent = formatCurrency(total);
+
+                updateOrderTotal();
+            });
+        });
+
+        document.querySelectorAll('.stock').forEach(input => {
+            input.addEventListener('input', function () {
+                const index = this.getAttribute('data-index');
+                const stock = parseInt(this.value) || 0;
+                saveToLocalStorage(`stock-${index}`, stock);
+            });
+        });
+
+        // Evento para quando a quantidade de saída muda
+        document.querySelectorAll('.output-quantity').forEach(input => {
+            input.addEventListener('input', function () {
+                const index = this.getAttribute('data-index');
+                const stockInput = document.querySelector(`.stock[data-index="${index}"]`);
+                let stock = parseInt(stockInput.value) || 0;
+                const previousQuantity = parseInt(this.getAttribute('data-previous')) || 0;
+                const newQuantity = parseInt(this.value) || 0;
+
+                const difference = newQuantity - previousQuantity;
+                if (difference > 0 && difference <= stock) {
+                    // Reduz o estoque se a quantidade de saída aumentar
+                    stock -= difference;
+                    stockInput.value = stock;
+                    saveToLocalStorage(`stock-${index}`, stock); // Salva o estoque atualizado
+                } else if (difference < 0) {
+                    // Aumenta o estoque se a quantidade de saída for reduzida
+                    stock += Math.abs(difference);
+                    stockInput.value = stock;
+                    saveToLocalStorage(`stock-${index}`, stock); // Salva o estoque atualizado
+                } else if (newQuantity > stock) {
+                    alert("Quantidade de saída não pode ser maior que o estoque!");
+                    this.value = previousQuantity + stock;
+                    stockInput.value = 0;
+                }
+
+                // Atualiza a quantidade anterior para o próximo cálculo
+                this.setAttribute('data-previous', this.value);
+
+                const price = parseFloat(document.querySelector(`.price[data-index="${index}"]`).value) || 0;
+                const total = newQuantity * price;
+                document.querySelector(`.total[data-index="${index}"]`).textContent = formatCurrency(total);
+
+                // Atualiza o valor total do pedido
+                updateOrderTotal();
+
+                // Atualiza o total de geladinhos
+                updateTotalGeladinhos();
+            });
+        });
+
+        // Evento de clique para o ícone de cadeado
+        document.querySelectorAll('.lock-icon').forEach(icon => {
+            icon.addEventListener('click', function () {
+                const index = this.getAttribute('data-index');
+                toggleLock(index);
+            });
+        });
+
+        // Função para ampliar a imagem ao clicar
+        document.querySelectorAll('.product-image').forEach(image => {
+            image.addEventListener('click', function () {
+                this.classList.toggle('enlarged');
+            });
+        });
+    </script>
+</body>
+</html>
